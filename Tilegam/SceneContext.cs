@@ -6,6 +6,9 @@ namespace Tilegam.Client
 {
     public class SceneContext
     {
+        public ShaderCache ShaderCache { get; }
+        public GraphicsResourceCache GraphicsResourceCache { get; }
+
         public DeviceBuffer CameraInfoBuffer { get; private set; }
         
         // MainSceneView and Duplicator resource sets both use this.
@@ -31,6 +34,12 @@ namespace Tilegam.Client
         public TextureSampleCount MainSceneSampleCount { get; internal set; }
 
         public RgbaFloat ClearColor { get; set; } = RgbaFloat.Black;
+
+        public SceneContext(ShaderCache shaderCache, GraphicsResourceCache graphicsResourceCache)
+        {
+            ShaderCache = shaderCache ?? throw new ArgumentNullException(nameof(shaderCache));
+            GraphicsResourceCache = graphicsResourceCache ?? throw new ArgumentNullException(nameof(graphicsResourceCache));
+        }
 
         public virtual void CreateGraphicsDeviceObjects(GraphicsDevice gd, CommandList cl, SceneContext sc)
         {

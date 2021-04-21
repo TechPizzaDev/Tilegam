@@ -21,7 +21,7 @@ namespace Tilegam.Client
         private Sdl2ControllerTracker? _controllerTracker;
 
         private Scene _scene;
-        private SceneContext _sc = new SceneContext();
+        private SceneContext _sc;
 
         private CommandList _frameCommands;
 
@@ -48,6 +48,7 @@ namespace Tilegam.Client
             Sdl2ControllerTracker.CreateDefault(out _controllerTracker);
 
             GraphicsDevice.SyncToVerticalBlank = true;
+            _sc = new SceneContext(ShaderCache, GraphicsResourceCache);
 
             _imGuiRenderable = new ImGuiRenderable(Window.Width, Window.Height);
             _resizeHandled += (w, h) => _imGuiRenderable.WindowResized(w, h);
@@ -98,7 +99,8 @@ namespace Tilegam.Client
             GraphicsDevice.WaitForIdle();
 
             _frameCommands.Dispose();
-            StaticResourceCache.DisposeGraphicsDeviceObjects();
+            ShaderCache.DisposeResources();
+            GraphicsResourceCache.DisposeResources();
 
             _sc.DisposeGraphicsDeviceObjects();
             _scene.DestroyGraphicsDeviceObjects();

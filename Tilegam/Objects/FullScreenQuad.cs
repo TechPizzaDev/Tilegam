@@ -23,7 +23,8 @@ namespace Tilegam.Client.Objects
                 new ResourceLayoutElementDescription("SourceTexture", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
                 new ResourceLayoutElementDescription("SourceSampler", ResourceKind.Sampler, ShaderStages.Fragment)));
 
-            (Shader vs, Shader fs, SpecializationConstant[] specs) = StaticResourceCache.GetShaders(gd, gd.ResourceFactory, "FullScreenQuad");
+            ShaderSet shaderSet = sc.ShaderCache.GetShaders(
+                gd, gd.ResourceFactory, AssetHelper.GetShaderPath("FullScreenQuad"));
 
             GraphicsPipelineDescription pd = new(
                 new BlendStateDescription(
@@ -32,15 +33,9 @@ namespace Tilegam.Client.Objects
                 DepthStencilStateDescription.Disabled,
                 new RasterizerStateDescription(FaceCullMode.Back, PolygonFillMode.Solid, FrontFace.Clockwise, true, false),
                 PrimitiveTopology.TriangleList,
-                new ShaderSetDescription(
-                    new[]
-                    {
-                        new VertexLayoutDescription(
-                            new VertexElementDescription("Position", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2),
-                            new VertexElementDescription("TexCoords", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2))
-                    },
-                    new[] { vs, fs },
-                    specs),
+                shaderSet.CreateDescription(new VertexLayoutDescription(
+                    new VertexElementDescription("Position", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2),
+                    new VertexElementDescription("TexCoords", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2))),
                 new ResourceLayout[] { resourceLayout },
                 gd.SwapchainFramebuffer.OutputDescription);
             _pipeline = factory.CreateGraphicsPipeline(ref pd);

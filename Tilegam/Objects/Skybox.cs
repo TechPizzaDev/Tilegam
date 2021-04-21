@@ -67,7 +67,8 @@ namespace Tilegam.Client.Objects
                     new VertexElementDescription("Position", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float3))
             };
 
-            (Shader vs, Shader fs, SpecializationConstant[] specs) = StaticResourceCache.GetShaders(gd, gd.ResourceFactory, "Skybox");
+            ShaderSet shaderSet = sc.ShaderCache.GetShaders(
+                gd, gd.ResourceFactory, AssetHelper.GetShaderPath("Skybox"));
 
             _layout = factory.CreateResourceLayout(new ResourceLayoutDescription(
                 new ResourceLayoutElementDescription("CameraInfo", ResourceKind.UniformBuffer, ShaderStages.Vertex),
@@ -79,7 +80,7 @@ namespace Tilegam.Client.Objects
                 gd.IsDepthRangeZeroToOne ? DepthStencilStateDescription.DepthOnlyGreaterEqual : DepthStencilStateDescription.DepthOnlyLessEqual,
                 new RasterizerStateDescription(FaceCullMode.None, PolygonFillMode.Solid, FrontFace.Clockwise, true, true),
                 PrimitiveTopology.TriangleList,
-                new ShaderSetDescription(vertexLayouts, new[] { vs, fs }, specs),
+                shaderSet.CreateDescription(vertexLayouts),
                 new ResourceLayout[] { _layout },
                 sc.MainSceneFramebuffer.OutputDescription);
 
@@ -91,7 +92,7 @@ namespace Tilegam.Client.Objects
                 textureCube,
                 gd.PointSampler));
 
-            _disposeCollector.Add(_vb, _ib, textureCube, _layout, _pipeline, _resourceSet, vs, fs);
+            _disposeCollector.Add(_vb, _ib, textureCube, _layout, _pipeline, _resourceSet);
         }
 
         public override void DestroyDeviceObjects()

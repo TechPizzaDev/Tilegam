@@ -33,13 +33,7 @@ namespace Tilegam.Client
         public GraphicsDevice GraphicsDevice
         {
             get => _graphicsDevice;
-            private set
-            {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
-
-                _graphicsDevice = value;
-            }
+            private set => _graphicsDevice = value ?? throw new ArgumentNullException(nameof(value));
         }
 
         public Sdl2Window Window
@@ -53,6 +47,9 @@ namespace Tilegam.Client
                 _window.FocusLost += Window_FocusLost;
             }
         }
+
+        public ShaderCache ShaderCache { get; } = new();
+        public GraphicsResourceCache GraphicsResourceCache { get; } = new();
 
         public Application(GraphicsBackend? preferredBackend = null)
         {

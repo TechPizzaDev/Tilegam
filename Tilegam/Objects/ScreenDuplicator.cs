@@ -20,7 +20,8 @@ namespace Tilegam.Client.Objects
                 new ResourceLayoutElementDescription("SourceTexture", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
                 new ResourceLayoutElementDescription("SourceSampler", ResourceKind.Sampler, ShaderStages.Fragment)));
 
-            (Shader vs, Shader fs, SpecializationConstant[] specs) = StaticResourceCache.GetShaders(gd, gd.ResourceFactory, "ScreenDuplicator");
+            ShaderSet shaderSet = sc.ShaderCache.GetShaders(
+                gd, gd.ResourceFactory, AssetHelper.GetShaderPath("ScreenDuplicator"));
             
             GraphicsPipelineDescription pd = new GraphicsPipelineDescription(
                 new BlendStateDescription(
@@ -30,15 +31,9 @@ namespace Tilegam.Client.Objects
                 gd.IsDepthRangeZeroToOne ? DepthStencilStateDescription.DepthOnlyGreaterEqual : DepthStencilStateDescription.DepthOnlyLessEqual,
                 RasterizerStateDescription.Default,
                 PrimitiveTopology.TriangleList,
-                new ShaderSetDescription(
-                    new[]
-                    {
-                        new VertexLayoutDescription(
-                            new VertexElementDescription("Position", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2),
-                            new VertexElementDescription("TexCoords", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2))
-                    },
-                    new[] { vs, fs, },
-                    specs),
+                shaderSet.CreateDescription(new VertexLayoutDescription(
+                    new VertexElementDescription("Position", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2),
+                    new VertexElementDescription("TexCoords", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2))),
                 new ResourceLayout[] { resourceLayout },
                 sc.DuplicatorFramebuffer.OutputDescription);
             _pipeline = factory.CreateGraphicsPipeline(ref pd);

@@ -254,8 +254,8 @@ namespace Tilegam.Client.Objects
             DisposeCollectorResourceFactory factory = new(gd.ResourceFactory);
             _disposeCollector = factory.DisposeCollector;
 
-            (Shader vs, Shader fs, SpecializationConstant[] specs) =
-                StaticResourceCache.GetShaders(gd, gd.ResourceFactory, "ParticlePlane");
+            ShaderSet shaderSet = sc.ShaderCache.GetShaders(
+                gd, gd.ResourceFactory, AssetHelper.GetShaderPath("ParticlePlane"));
 
             VertexLayoutDescription sharedVertexLayout = new VertexLayoutDescription(
                 new VertexElementDescription("Position", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float3));
@@ -287,15 +287,10 @@ namespace Tilegam.Client.Objects
                 gd.IsDepthRangeZeroToOne ? DepthStencilStateDescription.DepthOnlyGreaterEqual : DepthStencilStateDescription.DepthOnlyLessEqual,
                 RasterizerStateDescription.Default,
                 PrimitiveTopology.TriangleList,
-                new ShaderSetDescription(
-                    new[]
-                    {
-                        sharedVertexLayout,
-                        vertexLayoutPerInstanceStatic,
-                        vertexLayoutPerInstanceDynamic
-                    },
-                    new[] { vs, fs, },
-                    specs),
+                shaderSet.CreateDescription(
+                    sharedVertexLayout,
+                    vertexLayoutPerInstanceStatic,
+                    vertexLayoutPerInstanceDynamic),
                 new ResourceLayout[] { sharedLayout },
                 sc.MainSceneFramebuffer.OutputDescription);
             _pipeline = factory.CreateGraphicsPipeline(ref pd);

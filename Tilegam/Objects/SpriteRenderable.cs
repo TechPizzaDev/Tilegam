@@ -44,6 +44,7 @@ namespace Tilegam.Objects
             SetupBatchPipeline(
                 gd,
                 gd.ResourceFactory,
+                sc,
                 sc.MainSceneFramebuffer.OutputDescription);
 
             needsbuild = true;
@@ -207,8 +208,11 @@ namespace Tilegam.Objects
                         float qy = yy * siz;
                         float angle = MathF.Atan2(qy - kek.Y, qx - kek.X) - MathF.PI / 2;
 
-                        float sin = MathF.Sin(angle);//(tt + i - 4.5f) * 3) * 1.5f;
-                        float cos = MathF.Cos(angle);//(tt + i - 4.5f) * 6) * 0.75f;s
+                        //float sin = MathF.Sin(angle);//(tt + i - 4.5f) * 3) * 1.5f;
+                        //float cos = MathF.Cos(angle);//(tt + i - 4.5f) * 6) * 0.75f;
+
+                        float sin = MathF.Sin((tt + MathF.Sin(yy * 0.1f) - 4.5f) * 3) * 1.5f;
+                        float cos = MathF.Cos((tt + MathF.Cos(xx * 0.1f) - 4.5f) * 6) * 0.75f;
 
                         SetRotatedQuad(ptr,
                             qx,
@@ -374,7 +378,8 @@ namespace Tilegam.Objects
         {
         }
 
-        private void SetupBatchPipeline(GraphicsDevice device, ResourceFactory factory, OutputDescription outputs)
+        private void SetupBatchPipeline(
+            GraphicsDevice device, ResourceFactory factory, SceneContext sc, OutputDescription outputs)
         {
             ResourceLayout matrixLayout = factory.CreateResourceLayout(new ResourceLayoutDescription(
                 new ResourceLayoutElementDescription("Matrices", ResourceKind.UniformBuffer, ShaderStages.Vertex)));
@@ -383,36 +388,35 @@ namespace Tilegam.Objects
                 new ResourceLayoutElementDescription("Texture0", ResourceKind.TextureReadOnly, ShaderStages.Vertex | ShaderStages.Fragment),
                 new ResourceLayoutElementDescription("Sampler0", ResourceKind.Sampler, ShaderStages.Vertex | ShaderStages.Fragment)));
 
-            (Shader vs, Shader fs, SpecializationConstant[] specs) = StaticResourceCache.GetShaders(
-                device, device.ResourceFactory, "GeometryBatch");
+            void CreatePipeline()
+            {
+                ShaderSet shaderSet = sc.ShaderCache.GetShaders(
+                    device, device.ResourceFactory, AssetHelper.GetShaderPath("GeometryBatch"));
 
-            var depthStencilState = device.IsDepthRangeZeroToOne
-                ? DepthStencilStateDescription.DepthOnlyGreaterEqual
-                : DepthStencilStateDescription.DepthOnlyLessEqual;
+                var depthStencilState = device.IsDepthRangeZeroToOne
+                    ? DepthStencilStateDescription.DepthOnlyGreaterEqual
+                    : DepthStencilStateDescription.DepthOnlyLessEqual;
 
-            var rasterizerState = RasterizerStateDescription.Default;
+                var rasterizerState = RasterizerStateDescription.Default;
 
-            GraphicsPipelineDescription pd = new(
-                new BlendStateDescription(
-                    RgbaFloat.Black,
-                    BlendAttachmentDescription.AlphaBlend),
-                depthStencilState,
-                rasterizerState,
-                PrimitiveTopology.TriangleList,
-                new ShaderSetDescription(
-                    new[]
-                    {
-                        new VertexLayoutDescription(
-                            new VertexElementDescription("Position", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float3),
-                            new VertexElementDescription("TexCoord", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2),
-                            new VertexElementDescription("Color", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Byte4))
-                    },
-                    new[] { vs, fs },
-                    specs),
-                new ResourceLayout[] { matrixLayout, texLayout },
-                outputs);
+                GraphicsPipelineDescription pd = new(
+                    new BlendStateDescription(
+                        RgbaFloat.Black,
+                        BlendAttachmentDescription.AlphaBlend),
+                    depthStencilState,
+                    rasterizerState,
+                    PrimitiveTopology.TriangleList,
+                    shaderSet.CreateDescription(new VertexLayoutDescription(
+                        new VertexElementDescription("Position", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float3),
+                        new VertexElementDescription("TexCoord", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2),
+                        new VertexElementDescription("Color", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Byte4))),
+                    new ResourceLayout[] { matrixLayout, texLayout },
+                    outputs);
 
-            batchPipeline = factory.CreateGraphicsPipeline(ref pd);
+                batchPipeline = factory.CreateGraphicsPipeline(ref pd);
+            }
+
+            CreatePipeline();
 
             matrixBuffer = factory.CreateBuffer(new BufferDescription((uint)Unsafe.SizeOf<Matrices>(), BufferUsage.UniformBuffer | BufferUsage.Dynamic));
 
