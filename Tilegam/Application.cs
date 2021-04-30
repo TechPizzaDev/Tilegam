@@ -15,11 +15,8 @@ namespace Tilegam.Client
         private Action _enableScreensaver;
         private Action _disableScreensaver;
 
-        private bool _drawWhenUnfocused = true;
-        private bool _drawWhenMinimized = false;
-        private TimeSpan _inactiveFrameTime = TimeSpan.FromSeconds(1 / 20.0);
-
         private bool _shouldExit;
+        private string _windowTitle = "";
 
         public TimeAverager TimeAverager { get; private set; }
 
@@ -27,8 +24,21 @@ namespace Tilegam.Client
 
         public bool AlwaysRecreateWindow { get; set; } = true;
         public bool SrgbSwapchain { get; set; } = false;
+        public bool DrawWhenUnfocused { get; set; } = true;
+        public bool DrawWhenMinimized { get; set; } = false;
+        public TimeSpan? TargetFrameTime { get; set; } = null;
+        public TimeSpan UnfocusedFrameTime { get; set; } = TimeSpan.FromSeconds(1 / 20.0);
+        public TimeSpan MinimizedFrameTime { get; set; } = TimeSpan.FromSeconds(1 / 20.0);
 
-        public string WindowTitle = "Tilegam";
+        public string WindowTitle
+        {
+            get => _windowTitle;
+            set
+            {
+                _windowTitle = value ?? "";
+                _window.Title = _windowTitle;
+            }
+        }
 
         public GraphicsDevice GraphicsDevice
         {
@@ -60,7 +70,7 @@ namespace Tilegam.Client
                 WindowWidth = 960,
                 WindowHeight = 540,
                 WindowInitialState = WindowState.Hidden,
-                WindowTitle = WindowTitle
+                WindowTitle = _windowTitle
             };
 
             var gdOptions = new GraphicsDeviceOptions(
@@ -117,13 +127,14 @@ namespace Tilegam.Client
             {
                 Window.Visible = true;
 
-                while (Window.Exists)
+                do
                 {
                     if (!RunBody(ref totalTicks, ref previousTicks))
                         break;
 
                     TimeAverager.Tick();
                 }
+                while (Window.Exists);
             }
 
             DisposeGraphicsDeviceObjects();
@@ -135,11 +146,18 @@ namespace Tilegam.Client
             long currentTicks = Stopwatch.GetTimestamp();
             long deltaTicks = currentTicks - previousTicks;
             previousTicks = currentTicks;
-            totalTicks += deltaTicks;
+
+            // TODO: update more based on overtime
+
+            TimeSpan deltaTime = TargetFrameTime.HasValue
+                ? TargetFrameTime.GetValueOrDefault()
+                : TimeSpan.FromSeconds(deltaTicks * TimeAverager.SecondsPerTick);
+
+            totalTicks += deltaTime.Ticks;
 
             var time = new FrameTime(
-                TimeSpan.FromSeconds(totalTicks * TimeAverager.SecondsPerTick),
-                TimeSpan.FromSeconds(deltaTicks * TimeAverager.SecondsPerTick),
+                TimeSpan.FromTicks(totalTicks),
+                deltaTime,
                 IsActive);
 
             TimeAverager.BeginUpdate();
@@ -157,17 +175,30 @@ namespace Tilegam.Client
             if (!Window.Exists)
                 return false;
 
+            double spentMillis = (Stopwatch.GetTimestamp() - currentTicks) * TimeAverager.MillisPerTick;
+            int sleepMillis;
+
             if (time.IsActive)
             {
                 DrawAndPresent();
+
+                if (TargetFrameTime.HasValue)
+                {
+                    sleepMillis = (int)(TargetFrameTime.GetValueOrDefault().TotalSeconds - spentMillis);
+                }
+                else
+                {
+                    sleepMillis = 0;
+                }
             }
             else
             {
-                if (_drawWhenUnfocused)
+                WindowState windowState = Window.WindowState;
+                if (DrawWhenUnfocused)
                 {
-                    if (Window.WindowState == WindowState.Minimized)
+                    if (windowState == WindowState.Minimized)
                     {
-                        if (_drawWhenMinimized)
+                        if (DrawWhenMinimized)
                             DrawAndPresent();
                     }
                     else
@@ -176,10 +207,19 @@ namespace Tilegam.Client
                     }
                 }
 
-                double spentMillis = (Stopwatch.GetTimestamp() - currentTicks) * TimeAverager.MillisPerTick;
-                int millis = (int)(_inactiveFrameTime.TotalMilliseconds - spentMillis);
-                if (millis > 0)
-                    Thread.Sleep(millis);
+                if (windowState == WindowState.Minimized)
+                {
+                    sleepMillis = (int)(MinimizedFrameTime.TotalMilliseconds - spentMillis);
+                }
+                else
+                {
+                    sleepMillis = (int)(UnfocusedFrameTime.TotalMilliseconds - spentMillis);
+                }
+            }
+
+            if (sleepMillis > 0)
+            {
+                Thread.Sleep(sleepMillis);
             }
             return true;
         }
@@ -250,7 +290,7 @@ namespace Tilegam.Client
                     WindowWidth = Window.Width,
                     WindowHeight = Window.Height,
                     WindowInitialState = Window.WindowState,
-                    WindowTitle = WindowTitle
+                    WindowTitle = _windowTitle
                 };
 
                 Window.Close();

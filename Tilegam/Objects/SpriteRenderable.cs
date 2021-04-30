@@ -69,13 +69,14 @@ namespace Tilegam.Objects
             matrices.Projection = Matrix4x4.CreateOrthographicOffCenter(0, width, height, 0, 0, 1);
             matrices.View = Matrix4x4.CreateLookAt(new Vector3(0, 0, 0), new Vector3(0, 0, 0), Vector3.UnitY);
             matrices.World = Matrix4x4.Identity;
-            cl.UpdateBuffer(matrixBuffer, 0, ref matrices);
+            gd.UpdateBuffer(matrixBuffer, 0, ref matrices);
 
             cl.SetPipeline(batchPipeline);
             cl.SetFramebuffer(sc.MainSceneFramebuffer);
             cl.SetFullViewport(0);
             cl.SetGraphicsResourceSet(0, matrixSet);
             cl.SetGraphicsResourceSet(1, texSet0);
+
             batch.Submit(cl);
         }
 
@@ -91,7 +92,20 @@ namespace Tilegam.Objects
             //needsbuild = false;
 
             batch.Begin();
-
+            //
+            //for (int y = 0; y < 256; y++)
+            //{
+            //    for (int x = 0; x < 256; x++)
+            //    {
+            //        var res = batch.ReserveQuadsUnsafe(1);
+            //
+            //        RgbaByte color = new RgbaByte((byte)x, (byte)((x + y) / 2), (byte)y, 255);
+            //        SetQuad(res.Vertices, x + 100, y + 100, 0, 1, 1, 0, 0, 0, 0, color, color, color, color);
+            //    }
+            //}
+            //
+            //batch.End();
+            
             //Span<VertexPositionColorTexture> vertices = stackalloc VertexPositionColorTexture[]
             //{
             //    new VertexPositionColorTexture
@@ -382,7 +396,7 @@ namespace Tilegam.Objects
             GraphicsDevice device, ResourceFactory factory, SceneContext sc, OutputDescription outputs)
         {
             ResourceLayout matrixLayout = factory.CreateResourceLayout(new ResourceLayoutDescription(
-                new ResourceLayoutElementDescription("Matrices", ResourceKind.UniformBuffer, ShaderStages.Vertex)));
+                new ResourceLayoutElementDescription("ProjectionMatrix", ResourceKind.UniformBuffer, ShaderStages.Vertex)));
 
             ResourceLayout texLayout = factory.CreateResourceLayout(new ResourceLayoutDescription(
                 new ResourceLayoutElementDescription("Texture0", ResourceKind.TextureReadOnly, ShaderStages.Vertex | ShaderStages.Fragment),
@@ -418,7 +432,9 @@ namespace Tilegam.Objects
 
             CreatePipeline();
 
-            matrixBuffer = factory.CreateBuffer(new BufferDescription((uint)Unsafe.SizeOf<Matrices>(), BufferUsage.UniformBuffer | BufferUsage.Dynamic));
+            matrixBuffer = factory.CreateBuffer(new BufferDescription(
+                (uint)Unsafe.SizeOf<Matrices>(), BufferUsage.UniformBuffer | BufferUsage.Dynamic));
+            matrixBuffer.Name = "what";
 
             matrixSet = factory.CreateResourceSet(new ResourceSetDescription(
                 matrixLayout, matrixBuffer));

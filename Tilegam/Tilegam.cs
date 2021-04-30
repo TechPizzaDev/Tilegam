@@ -81,6 +81,8 @@ namespace Tilegam.Client
             CreateGraphicsDeviceObjects();
 
             ImGui.StyleColorsClassic();
+
+            WindowTitle = nameof(Tilegam);
         }
 
         protected override void WindowResized()
@@ -298,7 +300,8 @@ namespace Tilegam.Client
                 if (ImGui.IsItemHovered())
                 {
                     ImGui.SetTooltip(
-                        "Causes a new OS window to be created whenever the graphics backend is switched. This is much safer, and is the default.");
+                        "Causes a new OS window to be created whenever the graphics backend is switched. " +
+                        "This is much safer, and is the default.");
                 }
 
                 if (ImGui.MenuItem("sRGB Swapchain Format", string.Empty, SrgbSwapchain, true))
@@ -310,19 +313,29 @@ namespace Tilegam.Client
                 bool vsync = GraphicsDevice.SyncToVerticalBlank;
                 if (ImGui.MenuItem("VSync", string.Empty, vsync, true))
                 {
-                    GraphicsDevice.SyncToVerticalBlank = !GraphicsDevice.SyncToVerticalBlank;
+                    GraphicsDevice.SyncToVerticalBlank = !vsync;
                 }
 
                 bool resizable = Window.Resizable;
                 if (ImGui.MenuItem("Resizable Window", string.Empty, resizable))
                 {
-                    Window.Resizable = !Window.Resizable;
+                    Window.Resizable = !resizable;
                 }
 
                 bool bordered = Window.BorderVisible;
                 if (ImGui.MenuItem("Visible Window Border", string.Empty, bordered))
                 {
-                    Window.BorderVisible = !Window.BorderVisible;
+                    Window.BorderVisible = !bordered;
+                }
+
+                if (ImGui.MenuItem("Draw when Unfocused", string.Empty, DrawWhenUnfocused))
+                {
+                    DrawWhenUnfocused = !DrawWhenUnfocused;
+                }
+
+                if (ImGui.MenuItem("Draw when Minimized", string.Empty, DrawWhenMinimized))
+                {
+                    DrawWhenMinimized = !DrawWhenMinimized;
                 }
 
                 ImGui.EndMenu();
